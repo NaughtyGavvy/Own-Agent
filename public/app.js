@@ -1,3 +1,4 @@
+```javascript
 let conversation = [];
 
 const chat = document.getElementById("chat");
@@ -5,7 +6,10 @@ const input = document.getElementById("message");
 const send = document.getElementById("send");
 
 
+// ===============================
 // ENTER = SEND
+// ===============================
+
 input.addEventListener("keydown", function (event) {
 
   if (event.key === "Enter" && !event.shiftKey) {
@@ -19,7 +23,10 @@ input.addEventListener("keydown", function (event) {
 });
 
 
+// ===============================
 // SUGGESTION BUTTON
+// ===============================
+
 function useSuggestion(text) {
 
   input.value = text;
@@ -29,7 +36,10 @@ function useSuggestion(text) {
 }
 
 
-// ADD MESSAGE TO SCREEN
+// ===============================
+// ADD MESSAGE TO CHAT
+// ===============================
+
 function addMessage(role, text) {
 
   const welcome =
@@ -63,9 +73,11 @@ function addMessage(role, text) {
   const content =
     document.createElement("div");
 
-  content.className = "message-text";
+  content.className =
+    "message-text";
 
-  content.textContent = text;
+  content.textContent =
+    text;
 
 
   message.appendChild(avatar);
@@ -81,7 +93,77 @@ function addMessage(role, text) {
 }
 
 
-// SEND MESSAGE TO VERCEL
+// ===============================
+// SHOW LOADING MESSAGE
+// ===============================
+
+function showLoading() {
+
+  const message =
+    document.createElement("div");
+
+  message.id =
+    "nova-loading";
+
+  message.className =
+    "message";
+
+
+  const avatar =
+    document.createElement("div");
+
+  avatar.className =
+    "avatar";
+
+  avatar.textContent =
+    "✦";
+
+
+  const content =
+    document.createElement("div");
+
+  content.className =
+    "message-text";
+
+  content.textContent =
+    "NOVA is thinking...";
+
+
+  message.appendChild(avatar);
+
+  message.appendChild(content);
+
+  chat.appendChild(message);
+
+
+  chat.scrollTop =
+    chat.scrollHeight;
+
+}
+
+
+// ===============================
+// REMOVE LOADING
+// ===============================
+
+function removeLoading() {
+
+  const loading =
+    document.getElementById(
+      "nova-loading"
+    );
+
+  if (loading) {
+    loading.remove();
+  }
+
+}
+
+
+// ===============================
+// SEND MESSAGE TO NETLIFY
+// ===============================
+
 async function sendMessage() {
 
   const text =
@@ -93,14 +175,14 @@ async function sendMessage() {
   }
 
 
-  // Show user's message
+  // Show user message
   addMessage(
     "user",
     text
   );
 
 
-  // Save conversation
+  // Save user message
   conversation.push({
 
     role: "user",
@@ -117,40 +199,52 @@ async function sendMessage() {
   // Disable send button
   send.disabled = true;
 
-  send.textContent = "...";
+  send.textContent =
+    "•••";
+
+
+  // Show loading
+  showLoading();
 
 
   try {
 
     const response =
-      await fetch("/api/chat", {
+      await fetch(
+        "/.netlify/functions/chat",
+        {
 
-        method: "POST",
+          method: "POST",
 
-        headers: {
+          headers: {
 
-          "Content-Type":
-            "application/json"
+            "Content-Type":
+              "application/json"
 
-        },
+          },
 
-        body: JSON.stringify({
+          body: JSON.stringify({
 
-          message: text,
+            message: text,
 
-          history:
-            conversation.slice(0, -1)
+            history:
+              conversation.slice(0, -1)
 
-        })
+          })
 
-      });
+        }
+      );
 
 
     const data =
       await response.json();
 
 
-    // Check server error
+    // Remove loading
+    removeLoading();
+
+
+    // Check server response
     if (!response.ok) {
 
       throw new Error(
@@ -161,10 +255,16 @@ async function sendMessage() {
     }
 
 
+    // Get AI response
+    const reply =
+      data.reply ||
+      "I didn't receive a response.";
+
+
     // Show AI response
     addMessage(
       "assistant",
-      data.reply
+      reply
     );
 
 
@@ -173,25 +273,31 @@ async function sendMessage() {
 
       role: "model",
 
-      text: data.reply
+      text: reply
 
     });
 
 
-    // Add to sidebar
+    // Add conversation to sidebar
     addHistory(text);
 
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "NOVA ERROR:",
+      error
+    );
+
+
+    removeLoading();
 
 
     addMessage(
 
       "assistant",
 
-      "Sorry, I couldn't connect to NOVA.\n\n" +
+      "Sorry, NOVA could not connect.\n\n" +
       error.message
 
     );
@@ -199,15 +305,19 @@ async function sendMessage() {
   }
 
 
-  // Enable button
+  // Enable send button
   send.disabled = false;
 
-  send.textContent = "➤";
+  send.textContent =
+    "➤";
 
 }
 
 
-// ADD CHAT TO SIDEBAR
+// ===============================
+// CHAT HISTORY
+// ===============================
+
 function addHistory(text) {
 
   const box =
@@ -216,7 +326,13 @@ function addHistory(text) {
     );
 
 
+  if (!box) {
+    return;
+  }
+
+
   // Only add first message
+  // for this conversation
   if (box.children.length > 0) {
     return;
   }
@@ -234,12 +350,19 @@ function addHistory(text) {
     text;
 
 
+  item.title =
+    text;
+
+
   box.appendChild(item);
 
 }
 
 
+// ===============================
 // NEW CHAT
+// ===============================
+
 function newChat() {
 
   conversation = [];
@@ -265,8 +388,54 @@ function newChat() {
         Build, learn, create and explore.
       </p>
 
+      <div class="suggestions">
+
+        <button
+          onclick="useSuggestion('Build me a website')"
+        >
+          🌐 Build a website
+        </button>
+
+        <button
+          onclick="useSuggestion('Explain artificial intelligence simply')"
+        >
+          🧠 Explain AI
+        </button>
+
+        <button
+          onclick="useSuggestion('Help me write a JavaScript program')"
+        >
+          💻 Write code
+        </button>
+
+        <button
+          onclick="useSuggestion('Give me a business idea')"
+        >
+          💡 Give me an idea
+        </button>
+
+      </div>
+
     </div>
 
   `;
 
+
+  input.focus();
+
 }
+
+
+// ===============================
+// AUTO FOCUS INPUT
+// ===============================
+
+window.addEventListener(
+  "load",
+  function () {
+
+    input.focus();
+
+  }
+);
+```
