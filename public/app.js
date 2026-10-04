@@ -1,4 +1,8 @@
 ```javascript
+// ==========================================
+// NOVA AI - NETLIFY FRONTEND
+// ==========================================
+
 let conversation = [];
 
 const chat = document.getElementById("chat");
@@ -6,28 +10,39 @@ const input = document.getElementById("message");
 const send = document.getElementById("send");
 
 
-// ===============================
-// ENTER = SEND
-// ===============================
+// ==========================================
+// ENTER KEY
+// ==========================================
 
-input.addEventListener("keydown", function (event) {
+if (input) {
 
-  if (event.key === "Enter" && !event.shiftKey) {
+  input.addEventListener("keydown", function (event) {
 
-    event.preventDefault();
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
 
-    sendMessage();
+      event.preventDefault();
 
-  }
+      sendMessage();
 
-});
+    }
+
+  });
+
+}
 
 
-// ===============================
+// ==========================================
 // SUGGESTION BUTTON
-// ===============================
+// ==========================================
 
 function useSuggestion(text) {
+
+  if (!input) {
+    return;
+  }
 
   input.value = text;
 
@@ -36,12 +51,18 @@ function useSuggestion(text) {
 }
 
 
-// ===============================
-// ADD MESSAGE TO CHAT
-// ===============================
+// ==========================================
+// ADD MESSAGE
+// ==========================================
 
 function addMessage(role, text) {
 
+  if (!chat) {
+    return;
+  }
+
+
+  // Remove welcome screen
   const welcome =
     document.getElementById("welcome");
 
@@ -56,6 +77,7 @@ function addMessage(role, text) {
   message.className = "message";
 
 
+  // Avatar
   const avatar =
     document.createElement("div");
 
@@ -70,6 +92,7 @@ function addMessage(role, text) {
       : "✦";
 
 
+  // Message content
   const content =
     document.createElement("div");
 
@@ -87,17 +110,23 @@ function addMessage(role, text) {
   chat.appendChild(message);
 
 
+  // Scroll to bottom
   chat.scrollTop =
     chat.scrollHeight;
 
 }
 
 
-// ===============================
-// SHOW LOADING MESSAGE
-// ===============================
+// ==========================================
+// LOADING MESSAGE
+// ==========================================
 
 function showLoading() {
+
+  if (!chat) {
+    return;
+  }
+
 
   const message =
     document.createElement("div");
@@ -142,9 +171,9 @@ function showLoading() {
 }
 
 
-// ===============================
+// ==========================================
 // REMOVE LOADING
-// ===============================
+// ==========================================
 
 function removeLoading() {
 
@@ -154,17 +183,24 @@ function removeLoading() {
     );
 
   if (loading) {
+
     loading.remove();
+
   }
 
 }
 
 
-// ===============================
-// SEND MESSAGE TO NETLIFY
-// ===============================
+// ==========================================
+// SEND MESSAGE
+// ==========================================
 
 async function sendMessage() {
+
+  if (!input || !send) {
+    return;
+  }
+
 
   const text =
     input.value.trim();
@@ -175,14 +211,20 @@ async function sendMessage() {
   }
 
 
-  // Show user message
+  // ----------------------------------------
+  // SHOW USER MESSAGE
+  // ----------------------------------------
+
   addMessage(
     "user",
     text
   );
 
 
-  // Save user message
+  // ----------------------------------------
+  // SAVE USER MESSAGE
+  // ----------------------------------------
+
   conversation.push({
 
     role: "user",
@@ -192,22 +234,40 @@ async function sendMessage() {
   });
 
 
-  // Clear input
+  // ----------------------------------------
+  // CLEAR INPUT
+  // ----------------------------------------
+
   input.value = "";
 
 
-  // Disable send button
+  // ----------------------------------------
+  // DISABLE BUTTON
+  // ----------------------------------------
+
   send.disabled = true;
 
   send.textContent =
     "•••";
 
 
-  // Show loading
+  // ----------------------------------------
+  // SHOW LOADING
+  // ----------------------------------------
+
   showLoading();
 
 
   try {
+
+    console.log(
+      "Connecting to NOVA Netlify Function..."
+    );
+
+
+    // ======================================
+    // NETLIFY FUNCTION
+    // ======================================
 
     const response =
       await fetch(
@@ -236,39 +296,78 @@ async function sendMessage() {
       );
 
 
+    console.log(
+      "Netlify response:",
+      response.status
+    );
+
+
+    // ======================================
+    // GET RESPONSE
+    // ======================================
+
     const data =
       await response.json();
+
+
+    console.log(
+      "NOVA response:",
+      data
+    );
 
 
     // Remove loading
     removeLoading();
 
 
-    // Check server response
+    // ======================================
+    // ERROR CHECK
+    // ======================================
+
     if (!response.ok) {
 
       throw new Error(
+
         data.error ||
-        "AI request failed"
+        data.details ||
+        "Netlify AI request failed"
+
       );
 
     }
 
 
-    // Get AI response
+    // ======================================
+    // AI REPLY
+    // ======================================
+
     const reply =
-      data.reply ||
-      "I didn't receive a response.";
+      data.reply;
 
 
-    // Show AI response
+    if (!reply) {
+
+      throw new Error(
+        "NOVA returned an empty response."
+      );
+
+    }
+
+
+    // ======================================
+    // DISPLAY AI RESPONSE
+    // ======================================
+
     addMessage(
       "assistant",
       reply
     );
 
 
-    // Save AI response
+    // ======================================
+    // SAVE AI RESPONSE
+    // ======================================
+
     conversation.push({
 
       role: "model",
@@ -278,7 +377,10 @@ async function sendMessage() {
     });
 
 
-    // Add conversation to sidebar
+    // ======================================
+    // CHAT HISTORY
+    // ======================================
+
     addHistory(text);
 
 
@@ -297,7 +399,7 @@ async function sendMessage() {
 
       "assistant",
 
-      "Sorry, NOVA could not connect.\n\n" +
+      "⚠️ NOVA could not connect.\n\n" +
       error.message
 
     );
@@ -305,7 +407,10 @@ async function sendMessage() {
   }
 
 
-  // Enable send button
+  // ======================================
+  // ENABLE BUTTON
+  // ======================================
+
   send.disabled = false;
 
   send.textContent =
@@ -314,9 +419,9 @@ async function sendMessage() {
 }
 
 
-// ===============================
-// CHAT HISTORY
-// ===============================
+// ==========================================
+// ADD CHAT HISTORY
+// ==========================================
 
 function addHistory(text) {
 
@@ -331,8 +436,7 @@ function addHistory(text) {
   }
 
 
-  // Only add first message
-  // for this conversation
+  // Don't duplicate
   if (box.children.length > 0) {
     return;
   }
@@ -341,14 +445,11 @@ function addHistory(text) {
   const item =
     document.createElement("div");
 
-
   item.className =
     "history-item";
 
-
   item.textContent =
     text;
-
 
   item.title =
     text;
@@ -359,13 +460,18 @@ function addHistory(text) {
 }
 
 
-// ===============================
+// ==========================================
 // NEW CHAT
-// ===============================
+// ==========================================
 
 function newChat() {
 
   conversation = [];
+
+
+  if (!chat) {
+    return;
+  }
 
 
   chat.innerHTML = `
@@ -421,20 +527,36 @@ function newChat() {
   `;
 
 
-  input.focus();
+  if (input) {
+    input.focus();
+  }
 
 }
 
 
-// ===============================
-// AUTO FOCUS INPUT
-// ===============================
+// ==========================================
+// PAGE LOAD
+// ==========================================
 
 window.addEventListener(
   "load",
   function () {
 
-    input.focus();
+    if (input) {
+      input.focus();
+    }
+
+    console.log(
+      "NOVA AI frontend loaded."
+    );
+
+    console.log(
+      "Using Netlify Function:"
+    );
+
+    console.log(
+      "/.netlify/functions/chat"
+    );
 
   }
 );
